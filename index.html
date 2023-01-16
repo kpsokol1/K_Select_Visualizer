@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>HTML Canvas</title>
+</head>
+<body>
+<p>Enter the number of items to sort from 8 to 50 and a K value</p>
+<form id="frm1">
+  N: <input type="text" id = "n" style="position:absolute" name="num_items"><br>
+  K: <input type="text" id = "k" name="lname"><br><br>
+  <input type="button" id="myBtn" onclick="test(document.getElementById('n').value,document.getElementById('k').value)" value="Submit">
+
+</form>
+
+<canvas id = "main" width="1920" height = "1080"></canvas>
+
+
+
+</body>
+<script>
+  const canvas = document.querySelector('canvas')
+
+  // initiating 2D context on it
+  const c = canvas.getContext('2d')
+  var n = 0
+  var k = 0
+  var y1 = 300
+  var w = 0
+  var array = []
+  const belowDeck = new Map()
+  const oldValues = new Map()
+  const correspondingIndex = new Map()
+
+  function initializeArray(n){
+    for(var i = 0; i < n; i++){
+      array.push(Math.floor(Math.random()*100))
+    }
+  }
+
+  function getX(index){
+    return Math.min(Math.ceil((1840-2*n)/n)+2)*index+30
+  }
+
+  function displayArray(n) {
+    c.font = 1000 / (1.8 * n) + "px arial"
+    c.lineWidth = 1
+    c.strokeStyle = "black"
+    for (var i in array) {
+      c.strokeRect(getX(i), y1, w, w);
+      c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+    }
+  }
+
+  async function sort(begin, end){
+    await sleep(700)
+    highlightRange(begin,end)
+    if(begin >= end){
+      return;
+    }
+    var mid = Math.floor(begin + (end-begin) / 2);
+    await sort(begin,mid)
+    await sort(mid+1,end)
+    highlightRange(begin,end)
+    await merge(begin,mid,end)
+  }
+
+  async function merge(left,mid,right){
+    var leftArrayLength = mid - left + 1
+    var rightArrayLength = right - mid
+
+    var leftArray = []
+    var rightArray = []
+
+    for(var i = 0; i < leftArrayLength; i++){
+      leftArray[i] = array[left+i]
+    }
+    for(var j = 0; j < rightArrayLength; j++){
+      rightArray[j] = array[mid + 1 + j]
+    }
+
+    var p1 = 0
+    var p2 = 0
+    var k = left
+
+    while(p1 < leftArrayLength && p2 < rightArrayLength){
+      if(leftArray[p1] <= rightArray[p2]){
+        moveBlockToPosition(p1 + left, k, leftArray[p1],array[k],left,right)
+        await sleep(1300)
+        array[k] = leftArray[p1]
+        p1++
+      }
+      else{
+        moveBlockToPosition(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+        await sleep(1300)
+        array[k] = rightArray[p2]
+        p2++
+      }
+      k++
+    }
+
+    while(p1 < leftArrayLength){
+      moveBlockToPosition(p1 + left, k, leftArray[p1], array[k],left,right)
+      await sleep(1300)
+      array[k] = leftArray[p1]
+      p1++
+      k++
+    }
+
+    while(p2 < rightArrayLength){
+      moveBlockToPosition(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+      await sleep(1300)
+      array[k] = rightArray[p2]
+      p2++
+      k++
+    }
+
+    for (let [key, value] of belowDeck) {
+      moveBlockUp(key,value)
+      await sleep(700)
+    }
+
+  }
+
+  function moveBlockToPosition(currentIndex,newIndex,value,oldValue, left, right){
+    var x = getX(currentIndex)
+    var y = y1 //500
+
+    xDistance = getX(newIndex)-getX(currentIndex)
+    yDistance = w+20
+    xIncrement = xDistance/(yDistance/2)
+    const id  = setInterval( () => {
+      c.clearRect(x-2,y-2,w+4,w+3)
+      y += 2;
+      x += xIncrement
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w, w)
+      c.fillText(value,x+w/2,y+w/2)
+
+      correspondingIndex.set(currentIndex,value)
+      highlightRange(left,right)
+      for(let [key,value] of belowDeck){
+        highlightBelow(key,value)
+      }
+
+      if(y >= y1+yDistance){
+        c.fillStyle = "blue"
+        c.strokeStyle = "blue"
+        c.clearRect(x-1,y-1,w+2,w+3)
+        c.clearRect(getX(newIndex),y,w+1, w)
+        c.strokeRect(getX(newIndex),y,w+1, w)
+        c.fillText(value,getX(newIndex)+w/2,y+w/2)
+        console.log(currentIndex,newIndex)
+        belowDeck.set(newIndex,value)
+        oldValues.set(newIndex,oldValue)
+        if(oldValues.has(currentIndex)){
+          oldValues.delete(currentIndex);
+        }
+        console.log(oldValues)
+        clearInterval(id)
+      }
+    },10);
+  }
+
+  function moveBlockUp(key, value){
+    var x = getX(key)
+    var y = w+20+y1
+    const id  = setInterval(() => {
+      c.clearRect(x-1,y,w+3,w+3)
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w+1, w)
+      c.fillText(value,x+w/2,y+w/2)
+      y -= 2;
+      if(y <= 300){
+        c.clearRect(x-1,y-1,w+3,w+10)
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        c.strokeRect(x,y,w+1, w)
+        c.fillText(value,x+w/2,y+w/2)
+        belowDeck.delete(key)
+        correspondingIndex.delete(key)
+        if(oldValues.has(key)){
+          oldValues.delete(key);
+        }
+
+        clearInterval(id)
+      }
+    },0);
+  }
+
+  function highlightRange(left,right){
+    for(var i = 0; i < n; i++){
+      if(!correspondingIndex.has(i)){
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        if(i >= left && i <= right){
+          c.fillStyle = "blue"
+          c.strokeStyle = "blue"
+        }
+        if(!oldValues.has(i)){
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+        }
+        else{
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(oldValues.get(i), getX(i) + w / 2, y1 + w / 2)
+        }
+      }
+    }
+  }
+
+  function highlightBelow(belowIndex, value){
+    c.fillStyle = "blue"
+    c.strokeStyle = "blue"
+    c.clearRect(getX(belowIndex), w+y1+20, w, w);
+    c.strokeRect(getX(belowIndex), w+y1+20, w, w);
+    c.fillText(value, getX(belowIndex) + w / 2, w+y1+20 + w / 2)
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  //test()
+  async function test(n1, k1){
+    document.getElementById("myBtn").disabled = true;
+    n = n1
+    k = k1
+    w = Math.min((1840-2*n)/n, 300)
+    initializeArray(n)
+    displayArray(n)
+    await sort(0,n-1)
+    highlightRange(n-k,n-1)
+    document.getElementById("myBtn").false = false;
+  }
+</script>
+</html>
