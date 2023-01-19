@@ -87,7 +87,6 @@ function getPivot(left,right){
       leftPointer = i
       var j = right
       rightPointer = j
-      //g_pivot_index = 0//Math.floor((left+right)/2)
 
       highlightIndex()
 
@@ -119,6 +118,8 @@ function getPivot(left,right){
 
       var length = n-j
       if(j > 0){
+        g_pivot_index = -1
+        highlightIndex()
         await swap(left,j)
         await finishHighlight(j)
         //await deleteAndMove(n-left)
@@ -136,18 +137,8 @@ function getPivot(left,right){
         left = j
         await quickSort()
       }
-
-
-      //recursion
-      /*if (left < j) {
-        quickSort(left, j)
-      }
-      if (i < right) {
-        quickSort(i, right)
-      }*/
       resolve()
     });
-
   }
 
   function deleteAndMove(index){
@@ -282,30 +273,6 @@ function getPivot(left,right){
     });
   }
 
-  //highlights a set of blocks on the top level in blue
-  function highlightRange(){
-    for(var i = 0; i < n; i++){
-      if(!correspondingIndex.has(i)){           //don't highlight a block above deck if it is already below
-        c.fillStyle = "black"
-        c.strokeStyle = "black"
-        if(i >= left && i <= right){
-          c.fillStyle = "blue"
-          c.strokeStyle = "blue"
-        }
-        if(!oldValues.has(i)){                  //block hasn't been moved
-          c.clearRect(getX(i)-1, y1, w, w);
-          c.strokeRect(getX(i), y1, w, w);
-          c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
-        }
-        else{                                   //block has been shifted, but not moved yet, make sure to display its old value until moving
-          c.clearRect(getX(i)-1, y1, w, w);
-          c.strokeRect(getX(i), y1, w, w);
-          c.fillText(oldValues.get(i), getX(i) + w / 2, y1 + w / 2)
-        }
-      }
-    }
-  }
-
   function finishHighlight(start){
     return new Promise((resolve) => {
       for(var i = start; i < n; i++){
@@ -322,7 +289,7 @@ function getPivot(left,right){
     return new Promise((resolve) => {
       for(var i = left; i <= right; i++){
         if(!correspondingIndex.has(i)){
-          if(i == leftPointer || i == rightPointer){
+          if((i == leftPointer && leftPointer <= rightPointer)|| i == rightPointer){
             c.fillStyle = "blue"
             c.strokeStyle = "blue"
           }
@@ -380,10 +347,7 @@ function getPivot(left,right){
       finishHighlight(n-k)
     }
 
-    //await moveBlockToPosition(0,1,1,1)
-    //moveBlockToPosition(1,0,0,0)
     console.log(array)
-    //highlightRange(n-k,n-1)
     document.getElementById("myBtn").false = false;
   }
 </script>
