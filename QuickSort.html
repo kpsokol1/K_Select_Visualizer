@@ -12,22 +12,24 @@
    </style>
 </head>
 <body>
-<p style = "text-align: center" >Enter the number of items to sort from 8 to 50 and a K value</p>
-<form id="frm1" style = "text-align: center">
-  N: <input type="text" id = "n" name="num_items"><br>
-  K: <input type="text" id = "k" name="lname"><br><br>
-  <input type="button" id="myBtn" onclick="test(document.getElementById('n').value,document.getElementById('k').value)" value="Submit">
+  <p style = "text-align: center" >Enter the number of items to sort from 8 to 50 and a K value</p>
+  <form id="frm1" style = "text-align: center">
+    N: <input type="text" id = "n" name="num_items"><br>
+    K: <input type="text" id = "k" name="lname"><br><br>
+    <input type="button" id="myBtn" onclick="qs(document.getElementById('n').value,document.getElementById('k').value)" value="Submit">
 
-</form>
+  </form>
 
-<canvas id = "main" width="1920" height = "1080"></canvas>
+  <canvas id = "qscanvas" width="1920" height = "1080" ></canvas>
+  <canvas id = "mscanvas" width="1920" height = "1080"></canvas>
 </body>
 <script>
   //create canvas to display data on
-  const canvas = document.querySelector('canvas')
-
+  const qscanvas = document.querySelector('#qscanvas')
+  const mscanvas = document.querySelector('#mscanvas')
   // initiating 2D context on canvas
-  const c = canvas.getContext('2d')
+  
+  var c = qscanvas.getContext('2d')
 
   //global variables
   var n = 0                                     //number of items in array
@@ -332,7 +334,10 @@ function getPivot(left,right){
   }
 
   //main function
-  async function test(n1, k1){
+  async function qs(n1, k1){
+    c=qscanvas.getContext('2d')
+    qscanvas.setAttribute("style","display:block;")
+    mscanvas.setAttribute("style","display:none;")
     document.getElementById("myBtn").disabled = true;
     n = n1
     k = k1
