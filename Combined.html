@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QuickSort</title>
+  <style>
+      canvas {
+          width:  100%;
+          height: 100%;
+          margin: 0;
+      }
+  </style>
+</head>
+<body>
+<p style = "text-align: center;font-size:large" >Enter the number of items to sort from 8 to 50 and a K value less than or equal to N</p>
+<form id="frm1" style = "text-align: center">
+  <label for="numItems">N:</label>
+  <input type="number" id="numItems" min="8" max="50"/>
+  <label for="numItems">K:</label>
+  <input type="number" id="numK" min="1" max=50>
+  <input type="button" id="mergeBtn" onclick="mergeVisual(document.getElementById('numItems').value,document.getElementById('numK').value)" value="Merge Sort">
+  <input type="button" id="quickBtn" onclick="quickVisual(document.getElementById('numItems').value,document.getElementById('numK').value)" value="Quick Sort">
+</form>
+
+<canvas id = "main" width="1920" height = "1080"></canvas>
+</body>
+<script>
+  //create canvas to display data on
+  const canvas = document.querySelector('canvas')
+
+  // initiating 2D context on canvas
+  const c = canvas.getContext('2d')
+
+  //global variables
+  c.textAlign = "center"
+  var n = 0                                     //number of items in array
+  var k = 0                                     //top k elements
+  var y1 = 300                                  //y coordinate of where the blocks will be placed on the screen
+  var w = 0                                     //width of each block
+  var array = []                                //array we will sort
+  const belowDeck = new Map()                   //keeps track of blocks on the lower level
+  const oldValues = new Map()                   //keeps track of previous values in the sorted list
+  const correspondingIndex = new Map()          //keeps track of above level index corresponding to below level block
+  var leftPointer = -1
+  var rightPointer = -1
+  var g_pivot_index = 0
+  var left = 0
+  var right = n - 1
+  var pivot
+  var speedFactor = 0
+
+  function reset(){
+    c.textAlign = "center"
+    c.clearRect(0,0,canvas.width,canvas.height)
+    n = 0                                     //number of items in array
+    k = 0                                     //top k elements
+    y1 = 300                                  //y coordinate of where the blocks will be placed on the screen
+    w = 0                                     //width of each block
+    array = []                                //array we will sort
+    belowDeck.clear()                 //keeps track of blocks on the lower level
+    oldValues.clear()                  //keeps track of previous values in the sorted list
+    correspondingIndex.clear()         //keeps track of above level index corresponding to below level block
+    leftPointer = -1
+    rightPointer = -1
+    g_pivot_index = 0
+    left = 0
+    right = n - 1
+    pivot
+    speedFactor = 0
+  }
+  //adds random numbers to array to be sorted
+  function initializeArray(n){
+    for(var i = 0; i < n; i++){
+      array.push(Math.floor(Math.random()*100))
+    }
+  }
+
+  //gets the x coordinate of any block given in its index
+  function getX(index){
+    return Math.min(Math.ceil((1840-2*n)/n)+2)*index+30
+  }
+
+  //initially displays the unsorted array on the screen
+  function displayArray(n) {
+    c.font = 1000 / (1.8 * n) + "px arial"
+    c.lineWidth = 1
+    c.strokeStyle = "black"
+    for (var i in array) {
+      c.strokeRect(getX(i), y1, w, w);                      //draw the box
+      c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)     //draw the number in the box
+    }
+  }
+
+
+  function quickSort() {
+    return new Promise(async (resolve) => {
+      leftPointer = -1
+      rightPointer = -1
+      g_pivot_index = -1
+      highlightIndex()
+      await getPivot(left, right)
+      var i = left + 1
+      leftPointer = i
+      var j = right
+      rightPointer = j
+
+      highlightIndex()
+
+      //partition
+      while (i < j) {
+        while (array[i] < pivot) {
+          leftPointer++
+          await sleep(1000)
+          highlightIndex()
+          i++
+        }
+        while (array[j] > pivot) {
+          rightPointer--
+          await sleep(1000)
+          highlightIndex()
+          j--
+
+        }
+        if (i < j) {
+          await swap(i, j)
+          i++
+          leftPointer++
+          j--
+          rightPointer--
+          await sleep(1000)
+          highlightIndex()
+        }
+      }
+      var length = n-j
+      if(j > 0){
+        g_pivot_index = -1
+        highlightIndex()
+        await swap(left,j)
+        await finishHighlight(j)
+      }
+      if(right-left == 1 && array[left] == array[right]){
+        finishHighlight(right)
+      }
+      if(length < k){
+        right = j-1
+        //clearAllArrow()
+        await quickSort()
+      }
+      if(length > k){
+        await deleteAndMove(j)
+        left = j
+        //clearAllArrow()
+        await quickSort()
+      }
+      resolve()
+    });
+  }
+  function getPivot(left,right){
+    return new Promise(async (resolve) => {
+      g_pivot_index = Math.ceil(Math.random()*(right-left)+left)
+      pivot = array[g_pivot_index]
+      await sleep(1000)
+      await highlightIndex()
+      await sleep(2000)
+      if(g_pivot_index != 0){
+        await swap(left,g_pivot_index)
+      }
+      g_pivot_index = left
+      resolve()
+    })
+  }
+
+  function deleteAndMove(index){
+    return new Promise((resolve) => {
+      for(var i = 0; i < index; i++){
+        c.clearRect(getX(i)-1,y1-3,w+2,w+5)
+      }
+
+      resolve()
+    });
+  }
+
+  function swap(index1, index2){
+    return new Promise(async (resolve) => {
+      await sleep(200)
+      await moveBlockToPositionQuick(index1,index2,array[index1],array[index1],false)
+      await sleep(200)
+      await moveBlockToPositionQuick(index2,index1,array[index2],array[index2],false)
+      await sleep(200)
+      await moveBlockUpQuick(index1,array[index2])
+      await sleep(100)
+      await moveBlockUpQuick(index2,array[index1])
+      await sleep(100)
+      var tmp = array[index1]
+      array[index1] = array[index2]
+      array[index2] = tmp
+      resolve()
+    });
+
+  }
+  //moves a block from a position on the upper level to a position on the lower level
+  function moveBlockToPositionQuick(currentIndex,newIndex,value,oldValue){
+    return new Promise(async (resolve) => {
+      var x = getX(currentIndex)
+      var y = y1
+
+      xDistance = getX(newIndex)-getX(currentIndex)
+      yDistance = w+20
+      xIncrement = xDistance/(yDistance)    //calculate how much we need to move x each time we move y
+      while(y < y1+yDistance){        //everything inside of here runs in a loop at a set rate until clearInterval is run
+        if(currentIndex == g_pivot_index){
+          c.fillStyle = "red"
+          c.strokeStyle = "red"
+        }
+        else{
+          c.fillStyle = "blue"
+          c.strokeStyle = "blue"
+        }
+        c.clearRect(x-2,y-2,w+4,w+3)          //animating involves clearing the previous image and printing the new one in a new position
+        y += 1;
+        x += xIncrement
+
+        c.strokeRect(x,y,w, w)
+        c.fillText(value,x+w/2,y+w/2)
+
+        correspondingIndex.set(currentIndex,value)
+        highlightIndex()
+        for(let [key,value] of belowDeck){
+          highlightBelow(key,value)
+        }
+        await sleep(3)
+      }
+      if(currentIndex == g_pivot_index){
+        c.fillStyle = "red"
+        c.strokeStyle = "red"
+      }
+      else{
+        c.fillStyle = "blue"
+        c.strokeStyle = "blue"
+      }
+
+      //make sure the block is at its x position (could be off a little due to rounding)
+      c.clearRect(x-1,y-1,w+2,w+3)
+      c.clearRect(getX(newIndex),y,w+1, w)
+      c.strokeRect(getX(newIndex),y,w+1, w)
+      c.fillText(value,getX(newIndex)+w/2,y+w/2)
+
+      //adjust lists to account for what is below deck
+      belowDeck.set(newIndex,value)
+      oldValues.set(newIndex,oldValue)
+      if(oldValues.has(currentIndex)){
+        oldValues.delete(currentIndex);
+      }
+      resolve()
+    });
+  }
+
+  //moves a block from a below deck, straight up
+  function moveBlockUpQuick(key, value){
+    return new Promise(async (resolve) => {
+//current x and y of the block
+      var x = getX(key)
+      var y = w+20+y1
+
+
+      while(y > 300) {
+        c.clearRect(x - 1, y, w + 3, w + 3)
+        if (key == 0) {
+          c.fillStyle = "red"
+          c.strokeStyle = "red"
+        } else {
+          c.fillStyle = "blue"
+          c.strokeStyle = "blue"
+        }
+        c.strokeRect(x, y, w + 1, w)
+        c.fillText(value, x + w / 2, y + w / 2)
+        y -= 2;
+        await sleep(1*speedFactor)
+      }
+
+      if(y <= 300){                           //block is at the correct y value
+        //ensure block is at correct position on the x plane
+        c.clearRect(x-1,y-1,w+3,w+10)
+        if(key == 0){
+          c.fillStyle = "red"
+          c.strokeStyle = "red"
+        }
+        else{
+          c.fillStyle = "black"
+          c.strokeStyle = "black"
+        }
+        c.strokeRect(x,y,w+1, w)
+        c.fillText(value,x+w/2,y+w/2)
+
+        //remove block from below deck
+        belowDeck.delete(key)
+        correspondingIndex.delete(key)
+        if(oldValues.has(key)){
+          oldValues.delete(key);
+        }
+      }
+      resolve()
+    });
+  }
+
+  //moves a block from a below deck, straight up
+  function moveBlockUpMerge(key, value){
+    //current x and y of the block
+    var x = getX(key)
+    var y = w+20+y1
+
+
+    const id  = setInterval(() => {
+      c.clearRect(x-1,y,w+3,w+3)
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w+1, w)
+      c.fillText(value,x+w/2,y+w/2)
+      y -= 2;
+
+      if(y <= 300){                           //block is at the correct y value
+        //ensure block is at correct position on the x plane
+        c.clearRect(x-1,y-1,w+3,w+10)
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        c.strokeRect(x,y,w+1, w)
+        c.fillText(value,x+w/2,y+w/2)
+
+        //remove block from below deck
+        belowDeck.delete(key)
+        correspondingIndex.delete(key)
+        if(oldValues.has(key)){
+          oldValues.delete(key);
+        }
+        clearInterval(id)
+      }
+    },0);
+  }
+
+  function finishHighlight(start){
+    return new Promise((resolve) => {
+      for(var i = start; i < n; i++){
+        c.fillStyle = "violet"
+        c.strokeStyle = "violet"
+        c.clearRect(getX(i)-1, y1, w, w);
+        c.strokeRect(getX(i), y1, w, w);
+        c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+      }
+      resolve()
+    });
+  }
+  function highlightIndex(){
+    return new Promise((resolve) => {
+      for(var i = left; i <= right; i++){
+        if(!correspondingIndex.has(i)){
+          if((i == leftPointer && leftPointer <= rightPointer)|| i == rightPointer){
+            c.fillStyle = "blue"
+            c.strokeStyle = "blue"
+          }
+          else if(i == g_pivot_index){
+            c.fillStyle = "red"
+            c.strokeStyle = "red"
+          }
+          else{
+            c.fillStyle = "black"
+            c.strokeStyle = "black"
+          }
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+        }
+      }
+      resolve()
+    });
+  }
+
+  //highlights blocks below deck
+  function highlightBelow(belowIndex, value){
+    c.fillStyle = "blue"
+    c.strokeStyle = "blue"
+    c.clearRect(getX(belowIndex), w+y1+20, w, w);
+    c.strokeRect(getX(belowIndex), w+y1+20, w, w);
+    c.fillText(value, getX(belowIndex) + w / 2, w+y1+20 + w / 2)
+  }
+
+  //sleep x amount of ms. This will likely get removed but helps with sequential ordering since JavaScript likes to do things asyncyhronously
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  //merge portion of merge sort
+  async function merge(left,mid,right){
+    var leftArrayLength = mid - left + 1
+    var rightArrayLength = right - mid
+
+    var leftArray = []
+    var rightArray = []
+
+    for(var i = 0; i < leftArrayLength; i++){
+      leftArray[i] = array[left+i]
+    }
+    for(var j = 0; j < rightArrayLength; j++){
+      rightArray[j] = array[mid + 1 + j]
+    }
+
+    var p1 = 0
+    var p2 = 0
+    var k = left
+
+    while(p1 < leftArrayLength && p2 < rightArrayLength){
+      if(leftArray[p1] <= rightArray[p2]){
+        moveBlockToPositionMerge(p1 + left, k, leftArray[p1],array[k],left,right)
+        await sleep(1300*(-.008*n+1))
+        array[k] = leftArray[p1]
+        p1++
+      }
+      else{
+        moveBlockToPositionMerge(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+        await sleep(1300*(-.008*n+1))
+        array[k] = rightArray[p2]
+        p2++
+      }
+      k++
+    }
+
+    while(p1 < leftArrayLength){
+      moveBlockToPositionMerge(p1 + left, k, leftArray[p1], array[k],left,right)
+      await sleep(1300*(-.008*n+1))
+      array[k] = leftArray[p1]
+      p1++
+      k++
+    }
+
+    while(p2 < rightArrayLength){
+      moveBlockToPositionMerge(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+      await sleep(1300*(-.008*n+1))
+      array[k] = rightArray[p2]
+      p2++
+      k++
+    }
+
+    for (let [key, value] of belowDeck) {
+      moveBlockUpMerge(key,value)
+      await sleep(700)
+    }
+  }
+  //moves a block from a position on the upper level to a position on the lower level
+  function moveBlockToPositionMerge(currentIndex,newIndex,value,oldValue, left, right){
+    var x = getX(currentIndex)
+    var y = y1
+
+    xDistance = getX(newIndex)-getX(currentIndex)
+    yDistance = w+20
+    xIncrement = xDistance/(yDistance/2)    //calculate how much we need to move x each time we move y
+    const id  = setInterval( () => {        //everything inside of here runs in a loop at a set rate until clearInterval is run
+      c.clearRect(x-2,y-2,w+4,w+3)          //animating involves clearing the previous image and printing the new one in a new position
+      y += 2;
+      x += xIncrement
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w, w)
+      c.fillText(value,x+w/2,y+w/2)
+
+      correspondingIndex.set(currentIndex,value)
+      highlightRange(left,right)
+      for(let [key,value] of belowDeck){
+        highlightBelow(key,value)
+      }
+
+      if(y >= y1+yDistance){                    //the block is at its y position
+        c.fillStyle = "blue"
+        c.strokeStyle = "blue"
+
+        //make sure the block is at its x position (could be off a little due to rounding)
+        c.clearRect(x-1,y-1,w+2,w+3)
+        c.clearRect(getX(newIndex),y,w+1, w)
+        c.strokeRect(getX(newIndex),y,w+1, w)
+        c.fillText(value,getX(newIndex)+w/2,y+w/2)
+
+        //adjust lists to account for what is below deck
+        belowDeck.set(newIndex,value)
+        oldValues.set(newIndex,oldValue)
+        if(oldValues.has(currentIndex)){
+          oldValues.delete(currentIndex);
+        }
+        clearInterval(id)
+      }
+    },10);
+  }
+
+  async function mergeVisual(n1, k1){
+    reset()
+    document.getElementById("mergeBtn").disabled = true;
+    document.getElementById("quickBtn").disabled = true;
+    n = n1
+    k = k1
+    w = Math.min((1840-2*n)/n, 300)
+    initializeArray(n)
+    displayArray(n)
+    await sort(0,n-1)
+    highlightRange(n-k,n-1)
+    document.getElementById("mergeBtn").disabled = false;
+    document.getElementById("quickBtn").disabled = false;
+  }
+
+  //highlights a set of blocks on the top level in blue
+  function highlightRange(left,right){
+    for(var i = 0; i < n; i++){
+      if(!correspondingIndex.has(i)){           //don't highlight a block above deck if it is already below
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        if(i >= left && i <= right){
+          c.fillStyle = "blue"
+          c.strokeStyle = "blue"
+        }
+        if(!oldValues.has(i)){                  //block hasn't been moved
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+        }
+        else{                                   //block has been shifted, but not moved yet, make sure to display its old value until moving
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(oldValues.get(i), getX(i) + w / 2, y1 + w / 2)
+        }
+      }
+    }
+  }
+  //main function
+  async function quickVisual(n1, k1){
+    reset()
+    document.getElementById("mergeBtn").disabled = true;
+    document.getElementById("quickBtn").disabled = true;
+    n = n1
+    k = k1
+    w = Math.min((1840-2*n)/n, 300)
+    speedFactor = 1/4
+
+    left = 0
+    right = n - 1
+    if(n < 8 || n > 50 || k > n || k < 1){
+      c.textAlign = "center"
+      c.font = "100px arial"
+      c.fillText("Invalid input",window.innerWidth/2,100)
+      document.getElementById("mergeBtn").disabled = false;
+      document.getElementById("quickBtn").disabled = false;
+      return
+    }
+    initializeArray(n)
+    displayArray(n)
+    if(k == n){
+      await sleep(2000)
+      finishHighlight(0)
+    }
+    else{
+      await quickSort(0,n-1)
+      deleteAndMove(n-k)
+      finishHighlight(n-k)
+    }
+    //clearAllArrow()
+    document.getElementById("mergeBtn").disabled = false;
+    document.getElementById("quickBtn").disabled = false;
+  }
+  //split portion of merge sort
+  async function sort(begin, end){
+    await sleep(700)
+    highlightRange(begin,end)                               //highlights the numbers in blue that are in the current partition being worked on
+    if(begin >= end){
+      return;
+    }
+    var mid = Math.floor(begin + (end-begin) / 2);
+    await sort(begin,mid)
+    await sort(mid+1,end)
+    highlightRange(begin,end)
+    await merge(begin,mid,end)
+  }
+</script>
+</html>
