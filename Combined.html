@@ -8,19 +8,61 @@
   <title>Sorting</title>
   <style>
       canvas {
+          padding-top: 25px;
           width:  100%;
           height: 100%;
           margin: 0;
       }
+
+     header {
+      position: absolute;
+      font-family: 'Arial';
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 225px; 
+      overflow: hidden;
+      background: #353535;
+      color:white;
+    }
+
+    .button{
+      background-color: white;
+        color: #353535;
+        cursor: pointer;
+        padding: 5px;
+        width: 100px;
+        border: none;
+        text-align: center;
+        outline: none;
+    }
+
+    #speed{
+      background-color: white;
+        color: #353535;
+        cursor: pointer;
+        padding: 3px;
+        border: none;
+        text-align: center;
+        outline: none;
+    }
+
+    .active, .button:hover {
+        background-color: #999999;
+    }
+
   </style>
 </head>
 <body>
+<header>
 <p style = "text-align: center;font-size:large" >Enter the number of items to sort from 8 to 50 and a K value less than or equal to N</p>
 <form id="frm1" style = "text-align: center">
   <label for="numItems">N:</label>
   <input type="number" id="numItems" min="8" max="50"/>
   <label for="numItems">K:</label>
   <input type="number" id="numK" min="1" max=50>
+  <br>
+  <br>
   <label for="speed">Speed:</label>
   <select  name = "speed" id="speed">
     <option value=1>1x</option>
@@ -29,10 +71,17 @@
     <option value=4>4x</option>
     <option value=5>5x</option>
   </select>
-
-  <input type="button" id="mergeBtn" onclick="mergeVisual(parseInt(document.getElementById('numItems').value),parseInt(document.getElementById('numK').value),parseInt(document.getElementById('speed').value))" value="Merge Sort">
-  <input type="button" id="quickBtn" onclick="quickVisual(parseInt(document.getElementById('numItems').value),parseInt(document.getElementById('numK').value),parseInt(document.getElementById('speed').value))" value="Quick Select">
+  <br>
+  <br>
+  <input type="button" id="mergeBtn" class = "button" onclick="mergeVisual(parseInt(document.getElementById('numItems').value),parseInt(document.getElementById('numK').value),parseInt(document.getElementById('speed').value))" value="Merge Sort">
+  <input type="button" id="quickBtn" class = "button" onclick="quickVisual(parseInt(document.getElementById('numItems').value),parseInt(document.getElementById('numK').value),parseInt(document.getElementById('speed').value))" value="Quick Select">
+  <br>
+  <br>
+  <!-- Refreshes the page to allow for new input before animation is finished-->
+  <input type="button"  class = "button" onclick="location.reload()" value="New Input">
 </form>
+
+</header>
 
 <canvas id = "main" width="1920" height = "1080"></canvas>
 </body>
