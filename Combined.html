@@ -51,7 +51,7 @@
   var left = 0
   var right = n - 1
   var pivot
-  var speedFactor = 0
+  var speedFactor = 0                           //used to multiply the speed of the animation as needed
 
   function reset(){
     c.textAlign = "center"
@@ -61,16 +61,16 @@
     y1 = 300                                  //y coordinate of where the blocks will be placed on the screen
     w = 0                                     //width of each block
     array = []                                //array we will sort
-    belowDeck.clear()                 //keeps track of blocks on the lower level
-    oldValues.clear()                  //keeps track of previous values in the sorted list
-    correspondingIndex.clear()         //keeps track of above level index corresponding to below level block
+    belowDeck.clear()                   //keeps track of blocks on the lower level
+    oldValues.clear()                   //keeps track of previous values in the sorted list
+    correspondingIndex.clear()          //keeps track of above level index corresponding to below level block
     leftPointer = -1
     rightPointer = -1
     g_pivot_index = 0
     left = 0
     right = n - 1
     pivot
-    speedFactor = 0
+    speedFactor = 0                     //used to multiply the speed of the animation as needed
   }
   //adds random numbers to array to be sorted
   function initializeArray(n){
