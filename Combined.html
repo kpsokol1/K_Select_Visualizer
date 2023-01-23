@@ -158,7 +158,7 @@
   }
   function getPivot(left,right){
     return new Promise(async (resolve) => {
-      g_pivot_index = Math.ceil((left+right)/2)
+      g_pivot_index = Math.ceil(Math.random()*(right-left)+left)
       pivot = array[g_pivot_index]
       await sleep(1000)
       await highlightIndex()
