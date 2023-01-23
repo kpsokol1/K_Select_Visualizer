@@ -6,5 +6,5 @@ Comparing merge sort and quick sort visually
 
  - [X] Implement MergeSort
  - [X] Implement QuickSort
- - [ ] Combine into working page
+ - [X] Combine into working page
  - [ ] Make look good
