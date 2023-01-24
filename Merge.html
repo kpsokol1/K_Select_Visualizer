@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head >
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>Sorting Visualizer</title>
+</head>
+<body>
+  <p style = "text-align: center" >Enter the number of items to sort from 8 to 50 and a K value</p>
+  <form id="frm1" style = "text-align: center">
+    N: <input type="text" id = "n" name="num_items"><br>
+    K: <input type="text" id = "k" name="lname"><br><br>
+    <input type="button" id="myBtn" onclick="test(document.getElementById('n').value,document.getElementById('k').value)" value="Submit">
+
+  </form>
+
+  <canvas id = "main" width="100%" height = "100%"></canvas>
+
+</body>
+<script>
+  //create canvas to display data on
+  const canvas = document.querySelector('canvas')
+
+  // initiating 2D context on canvas
+  const c = canvas.getContext('2d')
+
+  //global variables
+  var n = 0                                     //number of items in array
+  var k = 0                                     //top k elements
+  var y1 = 300                                  //y coordinate of where the blocks will be placed on the screen
+  var w = 0                                     //width of each block
+  var array = []                                //array we will sort
+  const belowDeck = new Map()                   //keeps track of blocks on the lower level
+  const oldValues = new Map()                   //keeps track of previous values in the sorted list
+  const correspondingIndex = new Map()          //keeps track of above level index corresponding to below level block
+
+  //adds random numbers to array to be sorted
+  function initializeArray(n){
+    for(var i = 0; i < n; i++){
+      array.push(Math.floor(Math.random()*100))
+    }
+  }
+
+  //gets the x coordinate of any block given in its index
+  function getX(index){
+    return Math.min(Math.ceil((screen.width-2*n)/n)+2)*index
+  }
+
+  //initially displays the unsorted array on the screen
+  function displayArray(n) {
+    c.font = 1000 / (1.8 * n) + "px arial"
+    c.lineWidth = 1
+    c.strokeStyle = "black"
+    for (var i in array) {
+      c.strokeRect(getX(i), y1, w, w);                      //draw the box
+      c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)     //draw the number in the box
+    }
+  }
+
+  //split portion of merge sort
+  async function sort(begin, end){
+    await sleep(700)
+    highlightRange(begin,end)                               //highlights the numbers in blue that are in the current partition being worked on
+    if(begin >= end){
+      return;
+    }
+    var mid = Math.floor(begin + (end-begin) / 2);
+    await sort(begin,mid)
+    await sort(mid+1,end)
+    highlightRange(begin,end)
+    await merge(begin,mid,end)
+  }
+
+  //merge portion of merge sort
+  async function merge(left,mid,right){
+    var leftArrayLength = mid - left + 1
+    var rightArrayLength = right - mid
+
+    var leftArray = []
+    var rightArray = []
+
+    for(var i = 0; i < leftArrayLength; i++){
+      leftArray[i] = array[left+i]
+    }
+    for(var j = 0; j < rightArrayLength; j++){
+      rightArray[j] = array[mid + 1 + j]
+    }
+
+    var p1 = 0
+    var p2 = 0
+    var k = left
+
+    while(p1 < leftArrayLength && p2 < rightArrayLength){
+      if(leftArray[p1] <= rightArray[p2]){
+        moveBlockToPosition(p1 + left, k, leftArray[p1],array[k],left,right)
+        await sleep(1300)
+        array[k] = leftArray[p1]
+        p1++
+      }
+      else{
+        moveBlockToPosition(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+        await sleep(1300)
+        array[k] = rightArray[p2]
+        p2++
+      }
+      k++
+    }
+
+    while(p1 < leftArrayLength){
+      moveBlockToPosition(p1 + left, k, leftArray[p1], array[k],left,right)
+      await sleep(1300)
+      array[k] = leftArray[p1]
+      p1++
+      k++
+    }
+
+    while(p2 < rightArrayLength){
+      moveBlockToPosition(p2 + left + leftArrayLength, k, rightArray[p2],array[k],left,right)
+      await sleep(1300)
+      array[k] = rightArray[p2]
+      p2++
+      k++
+    }
+
+    for (let [key, value] of belowDeck) {
+      moveBlockUp(key,value)
+      await sleep(700)
+    }
+
+  }
+
+  //moves a block from a position on the upper level to a position on the lower level
+  function moveBlockToPosition(currentIndex,newIndex,value,oldValue, left, right){
+    var x = getX(currentIndex)
+    var y = y1
+
+    xDistance = getX(newIndex)-getX(currentIndex)
+    yDistance = w+20
+    xIncrement = xDistance/(yDistance/2)    //calculate how much we need to move x each time we move y
+    const id  = setInterval( () => {        //everything inside of here runs in a loop at a set rate until clearInterval is run
+      c.clearRect(x-2,y-2,w+4,w+3)          //animating involves clearing the previous image and printing the new one in a new position
+      y += 2;
+      x += xIncrement
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w, w)
+      c.fillText(value,x+w/2,y+w/2)
+
+      correspondingIndex.set(currentIndex,value)
+      highlightRange(left,right)
+      for(let [key,value] of belowDeck){
+        highlightBelow(key,value)
+      }
+
+      if(y >= y1+yDistance){                    //the block is at its y position
+        c.fillStyle = "blue"
+        c.strokeStyle = "blue"
+
+        //make sure the block is at its x position (could be off a little due to rounding)
+        c.clearRect(x-1,y-1,w+2,w+3)
+        c.clearRect(getX(newIndex),y,w+1, w)
+        c.strokeRect(getX(newIndex),y,w+1, w)
+        c.fillText(value,getX(newIndex)+w/2,y+w/2)
+
+        //adjust lists to account for what is below deck
+        belowDeck.set(newIndex,value)
+        oldValues.set(newIndex,oldValue)
+        if(oldValues.has(currentIndex)){
+          oldValues.delete(currentIndex);
+        }
+        clearInterval(id)
+      }
+    },10);
+  }
+
+  //moves a block from a below deck, straight up
+  function moveBlockUp(key, value){
+    //current x and y of the block
+    var x = getX(key)
+    var y = w+20+y1
+
+
+    const id  = setInterval(() => {
+      c.clearRect(x-1,y+1,w+3,w+3)
+      c.fillStyle = "blue"
+      c.strokeStyle = "blue"
+      c.strokeRect(x,y,w+1, w)
+      c.fillText(value,x+w/2,y+w/2)
+      y -= 2;
+
+      if(y <= 300){                           //block is at the correct y value
+        //ensure block is at correct position on the x plane
+        c.clearRect(x-1,y-1,w+3,w+10)
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        c.strokeRect(x,y,w+1, w)
+        c.fillText(value,x+w/2,y+w/2)
+
+        //remove block from below deck
+        belowDeck.delete(key)
+        correspondingIndex.delete(key)
+        if(oldValues.has(key)){
+          oldValues.delete(key);
+        }
+        clearInterval(id)
+      }
+    },0);
+  }
+
+  //highlights a set of blocks on the top level in blue
+  function highlightRange(left,right){
+    for(var i = 0; i < n; i++){
+      if(!correspondingIndex.has(i)){           //don't highlight a block above deck if it is already below
+        c.fillStyle = "black"
+        c.strokeStyle = "black"
+        if(i >= left && i <= right){
+          c.fillStyle = "blue"
+          c.strokeStyle = "blue"
+        }
+        if(!oldValues.has(i)){                  //block hasn't been moved
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(array[i], getX(i) + w / 2, y1 + w / 2)
+        }
+        else{                                   //block has been shifted, but not moved yet, make sure to display its old value until moving
+          c.clearRect(getX(i)-1, y1, w, w);
+          c.strokeRect(getX(i), y1, w, w);
+          c.fillText(oldValues.get(i), getX(i) + w / 2, y1 + w / 2)
+        }
+      }
+    }
+  }
+
+  //highlights blocks below deck
+  function highlightBelow(belowIndex, value){
+    c.fillStyle = "blue"
+    c.strokeStyle = "blue"
+    c.clearRect(getX(belowIndex), w+y1+20, w, w);
+    c.strokeRect(getX(belowIndex), w+y1+20, w, w);
+    c.fillText(value, getX(belowIndex) + w / 2, w+y1+20 + w / 2)
+  }
+
+  //sleep x amount of ms. This will likely get removed but helps with sequential ordering since JavaScript likes to do things asyncyhronously
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  //main function
+  async function test(n1, k1){
+    const canvas = document.querySelector("canvas");
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    document.getElementById("myBtn").disabled = true;
+    n = n1
+    k = k1
+    w = Math.min((canvas.width-2*n)/n, 300)
+    initializeArray(n)
+    displayArray(n)
+    await sort(0,n-1)
+    highlightRange(n-k,n-1)
+    document.getElementById("myBtn").false = false;
+  }
+</script>
+</html>
